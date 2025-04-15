@@ -1,5 +1,5 @@
 import { ReactElement, useMemo } from "react";
-import { parse } from "./prism";
+import { usePrism } from "./prism";
 
 export type VisualizerProps = {
   code: string;
@@ -7,7 +7,8 @@ export type VisualizerProps = {
 
 export function Visualizer(props: VisualizerProps): ReactElement | null {
   const { code } = props;
-  const parseResult = useMemo(() => parse(code), [code]);
+  const parse = usePrism();
+  const parseResult = useMemo(() => parse(code), [code, parse]);
   console.log(parseResult);
   return (
     <div

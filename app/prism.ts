@@ -1,14 +1,30 @@
-import { WASI } from "@bjorn3/browser_wasi_shim";
-import { parsePrism } from "@ruby/prism/src/parsePrism.js";
-import prismWasmPath from "@ruby/prism/src/prism.wasm?raw";
+import { loadPrism, type Options } from "@ruby/prism";
+import type { ParseResult } from "@ruby/prism/src/deserialize";
 
-const wasm = await WebAssembly.compileStreaming(fetch(prismWasmPath));
+let cachedPrism: ((source: string, options?: Options) => ParseResult) | null = null;
+let cachedError: Error | null = null;
+export async function loadPrismCached(): Promise<(source: string, options?: Options) => ParseResult> {
+  if (cachedPrism) {
+    return cachedPrism;
+  } else if (cachedError) {
+    throw cachedError;
+  }
+  try {
+    const prism = await loadPrism();
+    cachedPrism ??= prism;
+  } catch (e) {
+    console.log((e as Error).stack);
+    cachedError = e as Error;
+    throw e;
+  }
+  return cachedPrism;
+}
 
-const wasi = new WASI([], [], []);
-const instance = await WebAssembly.instantiate(wasm, { wasi_snapshot_preview1: wasi.wasiImport });
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-wasi.initialize(instance as any);
-
-export function parse(source: string, options: Parameters<typeof parsePrism>[2] = {}): ReturnType<typeof parsePrism> {
-  return parsePrism(instance.exports, source, options);
+export function usePrism(): (source: string, options?: Options) => ParseResult {
+  if (cachedPrism) {
+    return cachedPrism;
+  } else if (cachedError) {
+    throw cachedError;
+  }
+  throw loadPrismCached();
 }
