@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactElement, useRef, useState } from "react";
+import { Visualizer } from "./Visualizer";
 
 export function ClientPage(): ReactElement | null {
   const [code, setCode] = useState<string>("");
@@ -45,6 +46,7 @@ export function ClientPage(): ReactElement | null {
           setSnippetName("");
         }}
       />
+      <Visualizer code={code} />
     </div>
   );
 }

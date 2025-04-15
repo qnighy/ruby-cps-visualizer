@@ -12,6 +12,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@bjorn3/browser_wasi_shim@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@bjorn3/browser_wasi_shim@npm:0.4.1"
+  checksum: 10c0/4eccd0c4a4c8f41fcecb654bfd95981df3cdd1e0d4c24c46369516596cf9011dba04c6a07508c2751277016a0e7f4dae254e3b860ff3691aae7b04da1b56d317
+  languageName: node
+  linkType: hard
+
 "@emnapi/core@npm:^1.4.0":
   version: 1.4.1
   resolution: "@emnapi/core@npm:1.4.1"
@@ -476,6 +483,13 @@ __metadata:
   version: 1.1.0
   resolution: "@rtsao/scc@npm:1.1.0"
   checksum: 10c0/b5bcfb0d87f7d1c1c7c0f7693f53b07866ed9fec4c34a97a8c948fb9a7c0082e416ce4d3b60beb4f5e167cbe04cdeefbf6771320f3ede059b9ce91188c409a5b
+  languageName: node
+  linkType: hard
+
+"@ruby/prism@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "@ruby/prism@npm:1.4.0"
+  checksum: 10c0/c1ef57ad7a9b2c0c11ffcaf7f932d271c2a778dff083f7efbc916b3cb62eedb0583e61ca764496ef3e4dad509965200f90996eea81e198eccce69f520699b20b
   languageName: node
   linkType: hard
 
@@ -3227,7 +3241,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ruby-cps-visualizer@workspace:."
   dependencies:
+    "@bjorn3/browser_wasi_shim": "npm:^0.4.1"
     "@eslint/eslintrc": "npm:^3"
+    "@ruby/prism": "npm:^1.4.0"
     "@tailwindcss/postcss": "npm:^4"
     "@types/node": "npm:^20"
     "@types/react": "npm:^19"
