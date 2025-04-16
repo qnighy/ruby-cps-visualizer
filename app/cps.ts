@@ -54,13 +54,7 @@ class CPSTransformer {
           0,
           DUMMY_LOCATION,
           0,
-          [new LocalVariableReadNode(
-            0,
-            DUMMY_LOCATION,
-            0,
-            finalVar,
-            0
-          )]
+          [finalVar]
         ),
         null,
         null
@@ -69,10 +63,10 @@ class CPSTransformer {
     return result;
   }
 
-  cpsStatements(
-    statements: StatementsNode,
-    needResult: boolean
-  ): string {
+  cpsStatements(statements: StatementsNode, needResult: true): Node;
+  cpsStatements(statements: StatementsNode, needResult: false): null;
+  cpsStatements(statements: StatementsNode, needResult: boolean): Node | null;
+  cpsStatements(statements: StatementsNode, needResult: boolean): Node | null {
     const [init, last] =
       needResult
         ? [
@@ -86,14 +80,14 @@ class CPSTransformer {
     if (needResult) {
       return this.cpsExpression(last, true);
     } else {
-      return "";
+      return null;
     }
   }
 
-  cpsExpression(
-    expression: Node,
-    needResult: boolean,
-  ): string {
+  cpsExpression(expression: Node, needResult: true): Node;
+  cpsExpression(expression: Node, needResult: false): null;
+  cpsExpression(expression: Node, needResult: boolean): Node | null;
+  cpsExpression(expression: Node, needResult: boolean): Node | null {
     if (expression instanceof StatementsNode) {
       return this.cpsStatements(expression, needResult);
     } else if (expression instanceof ParenthesesNode) {
@@ -113,26 +107,12 @@ class CPSTransformer {
       if (!(expression.block instanceof BlockNode)) {
         let receiver: Node | null = null;
         if (expression.receiver) {
-          const varName = this.cpsExpression(expression.receiver, true);
-          receiver = new LocalVariableReadNode(
-            0,
-            DUMMY_LOCATION,
-            0,
-            varName,
-            0
-          );
+          receiver = this.cpsExpression(expression.receiver, true);
         }
         const args: Node[] = [];
         if (expression.arguments_) {
           for (const arg of expression.arguments_.arguments_) {
-            const varName = this.cpsExpression(arg, true);
-            args.push(new LocalVariableReadNode(
-              0,
-              DUMMY_LOCATION,
-              0,
-              varName,
-              0
-            ));
+            args.push(this.cpsExpression(arg, true));
           }
         }
         let blockArg: Node | null = null;
@@ -176,16 +156,26 @@ class CPSTransformer {
         this.currentHole = (value: Node) => {
           ((e.block as BlockNode).body as StatementsNode).body[0] = value;
         };
-        return varName ?? "";
+        return (
+          needResult
+            ? new LocalVariableReadNode(
+                0,
+                DUMMY_LOCATION,
+                0,
+                varName ?? "",
+                0
+              )
+            : null
+        );
       }
     }
     return this.cpsExpressionFallback(expression, needResult);
   }
 
-  cpsExpressionFallback(
-    expression: Node,
-    needResult: boolean,
-  ): string {
+  cpsExpressionFallback(expression: Node, needResult: true): Node;
+  cpsExpressionFallback(expression: Node, needResult: false): null;
+  cpsExpressionFallback(expression: Node, needResult: boolean): Node | null;
+  cpsExpressionFallback(expression: Node, needResult: boolean): Node | null {
     const varName = needResult ? this.freshIntermediate() : null;
     const e = thenCall(
       expression,
@@ -196,7 +186,17 @@ class CPSTransformer {
     this.currentHole = (value: Node) => {
       ((e.block as BlockNode).body as StatementsNode).body[0] = value;
     };
-    return varName ?? "";
+    return (
+      needResult
+        ? new LocalVariableReadNode(
+            0,
+            DUMMY_LOCATION,
+            0,
+            varName ?? "",
+            0
+          )
+        : null
+    );
   }
 
   fill(value: Node) {
