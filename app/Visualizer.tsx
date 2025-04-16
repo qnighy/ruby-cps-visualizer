@@ -1,6 +1,7 @@
 import { ReactElement, useMemo } from "react";
 import { usePrism } from "./prism";
 import { StringifyError, stringifyProgram } from "./stringify";
+import { CPSError, cpsProgram } from "./cps";
 
 export type VisualizerProps = {
   code: string;
@@ -12,9 +13,9 @@ export function Visualizer(props: VisualizerProps): ReactElement | null {
   const parseResult = useMemo(() => parse(code), [code, parse]);
   const [s, stringifyError] = useMemo(() => {
     try {
-      return [stringifyProgram(parseResult.value), null];
+      return [stringifyProgram(cpsProgram(parseResult.value)), null];
     } catch (e) {
-      if (e instanceof StringifyError) {
+      if (e instanceof StringifyError || e instanceof CPSError) {
         return [null, e];
       }
       throw e;
