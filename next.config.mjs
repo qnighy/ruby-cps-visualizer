@@ -7,6 +7,7 @@ const __dirname = new URL(".", import.meta.url).pathname;
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
+  output: "export",
   webpack(config, options) {
     const { isServer } = options;
 
