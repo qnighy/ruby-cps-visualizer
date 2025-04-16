@@ -13,7 +13,7 @@ export function stringifyProgram(program: ProgramNode): string {
 }
 
 const INDENT_UNIT = "  ";
-const LEVEL_PRIMARY = 1;
+// const LEVEL_PRIMARY = 1;
 const LEVEL_CALL = 2;
 const LEVEL_ASGN = 3;
 const LEVEL_STMT = 4;
@@ -38,13 +38,6 @@ class Printer {
   }
 
   printExpression(expression: Node, level: number): void {
-    const innerLevel = this.levelOfExpression(expression);
-    if (innerLevel > level) {
-      this.print("(");
-      this.printExpression(expression, innerLevel);
-      this.print(")");
-      return;
-    }
     if (expression instanceof SelfNode) {
       this.print("self");
     } else if (expression instanceof SourceLineNode) {
@@ -64,100 +57,104 @@ class Printer {
     } else if (expression instanceof LocalVariableReadNode) {
       this.print(expression.name);
     } else if (expression instanceof CallNode) {
-      if (expression.receiver) {
-        this.printExpression(expression.receiver, LEVEL_CALL);
-        if (expression.isSafeNavigation()) {
-          this.print("&.");
-        } else {
-          this.print(".");
-        }
-      }
-      this.print(expression.name);
-      if (expression.arguments_) {
-        this.print("(");
-        let first = true;
-        for (const arg of expression.arguments_.arguments_) {
-          if (!first) {
-            this.print(", ");
+      this.inParen(level, LEVEL_CALL, () => {
+        if (expression.receiver) {
+          this.printExpression(expression.receiver, LEVEL_CALL);
+          if (expression.isSafeNavigation()) {
+            this.print("&.");
+          } else {
+            this.print(".");
           }
-          first = false;
-          this.printArgument(arg);
         }
-        this.print(")");
-      }
-      if (expression.block instanceof BlockNode) {
-        this.print(" do");
-        if (expression.block.parameters instanceof BlockParametersNode) {
-          this.print(" |");
-          const params: Node[] = [
-            ...expression.block.parameters.parameters?.requireds ?? [],
-            ...expression.block.parameters.parameters?.optionals ?? [],
-            ...expression.block.parameters.parameters?.rest ?
-              [expression.block.parameters.parameters.rest] :
-              [],
-            ...expression.block.parameters.parameters?.posts ?? [],
-            ...expression.block.parameters.parameters?.keywords ?? [],
-            ...expression.block.parameters.parameters?.keywordRest ?
-              [expression.block.parameters.parameters.keywordRest] :
-              [],
-            ...expression.block.parameters.parameters?.block ?
-              [expression.block.parameters.parameters.block] :
-              [],
-          ];
+        this.print(expression.name);
+        if (expression.arguments_) {
+          this.print("(");
           let first = true;
-          for (const param of params) {
+          for (const arg of expression.arguments_.arguments_) {
             if (!first) {
               this.print(", ");
             }
             first = false;
-            if (param instanceof RequiredParameterNode) {
-              this.print(param.name);
-            } else if (param instanceof OptionalParameterNode) {
-              this.print(param.name);
-              this.print(" = ");
-              this.printExpression(param.value, LEVEL_ASGN);
-            } else if (param instanceof RestParameterNode) {
-              this.print("*");
-              if (param.name != null) {
-                this.print(param.name);
-              }
-            } else if (param instanceof RequiredKeywordParameterNode) {
-              this.print(param.name);
-              this.print(":");
-            } else if (param instanceof OptionalKeywordParameterNode) {
-              this.print(param.name);
-              this.print(": ");
-              this.printExpression(param.value, LEVEL_ASGN);
-            } else if (param instanceof KeywordRestParameterNode) {
-              this.print("**");
-              if (param.name != null) {
-                this.print(param.name);
-              }
-            } else if (param instanceof BlockParameterNode) {
-              this.print("&");
-              if (param.name != null) {
-                this.print(param.name);
-              }
-            } else {
-              throw new StringifyError(
-                `Unsupported parameter type: ${param.constructor.name}`
-              );
-            }
+            this.printArgument(arg);
           }
-          this.print("|");
+          this.print(")");
         }
-        this.print("\n");
-        this.indent++;
-        if (expression.block.body instanceof StatementsNode) {
-          this.printStatements(expression.block.body);
+        if (expression.block instanceof BlockNode) {
+          this.print(" do");
+          if (expression.block.parameters instanceof BlockParametersNode) {
+            this.print(" |");
+            const params: Node[] = [
+              ...expression.block.parameters.parameters?.requireds ?? [],
+              ...expression.block.parameters.parameters?.optionals ?? [],
+              ...expression.block.parameters.parameters?.rest ?
+                [expression.block.parameters.parameters.rest] :
+                [],
+              ...expression.block.parameters.parameters?.posts ?? [],
+              ...expression.block.parameters.parameters?.keywords ?? [],
+              ...expression.block.parameters.parameters?.keywordRest ?
+                [expression.block.parameters.parameters.keywordRest] :
+                [],
+              ...expression.block.parameters.parameters?.block ?
+                [expression.block.parameters.parameters.block] :
+                [],
+            ];
+            let first = true;
+            for (const param of params) {
+              if (!first) {
+                this.print(", ");
+              }
+              first = false;
+              if (param instanceof RequiredParameterNode) {
+                this.print(param.name);
+              } else if (param instanceof OptionalParameterNode) {
+                this.print(param.name);
+                this.print(" = ");
+                this.printExpression(param.value, LEVEL_ASGN);
+              } else if (param instanceof RestParameterNode) {
+                this.print("*");
+                if (param.name != null) {
+                  this.print(param.name);
+                }
+              } else if (param instanceof RequiredKeywordParameterNode) {
+                this.print(param.name);
+                this.print(":");
+              } else if (param instanceof OptionalKeywordParameterNode) {
+                this.print(param.name);
+                this.print(": ");
+                this.printExpression(param.value, LEVEL_ASGN);
+              } else if (param instanceof KeywordRestParameterNode) {
+                this.print("**");
+                if (param.name != null) {
+                  this.print(param.name);
+                }
+              } else if (param instanceof BlockParameterNode) {
+                this.print("&");
+                if (param.name != null) {
+                  this.print(param.name);
+                }
+              } else {
+                throw new StringifyError(
+                  `Unsupported parameter type: ${param.constructor.name}`
+                );
+              }
+            }
+            this.print("|");
+          }
+          this.print("\n");
+          this.indent++;
+          if (expression.block.body instanceof StatementsNode) {
+            this.printStatements(expression.block.body);
+          }
+          this.indent--;
+          this.print("end");
         }
-        this.indent--;
-        this.print("end");
-      }
+      });
     } else if (expression instanceof LocalVariableWriteNode) {
-      this.print(expression.name);
-      this.print(" = ");
-      this.printExpression(expression.value, LEVEL_ASGN);
+      this.inParen(level, LEVEL_ASGN, () => {
+        this.print(expression.name);
+        this.print(" = ");
+        this.printExpression(expression.value, LEVEL_ASGN);
+      });
     } else {
       throw new StringifyError(
         `Unsupported expression type: ${expression.constructor.name}`
@@ -165,30 +162,13 @@ class Printer {
     }
   }
 
-  levelOfExpression(expression: Node): number {
-    if (
-      expression instanceof SelfNode ||
-      expression instanceof SourceLineNode ||
-      expression instanceof SourceFileNode ||
-      expression instanceof SourceEncodingNode ||
-      expression instanceof TrueNode ||
-      expression instanceof FalseNode ||
-      expression instanceof NilNode ||
-      expression instanceof LocalVariableReadNode
-    ) {
-      return LEVEL_PRIMARY;
-    } else if (expression instanceof IntegerNode) {
-      return LEVEL_PRIMARY;
-    } else if (expression instanceof LocalVariableReadNode) {
-      return LEVEL_PRIMARY;
-    } else if (expression instanceof CallNode) {
-      return LEVEL_CALL;
-    } else if (expression instanceof LocalVariableWriteNode) {
-      return LEVEL_ASGN;
+  inParen(outerLevel: number, innerLevel: number, cb: () => void): void {
+    if (innerLevel > outerLevel) {
+      this.print("(");
+      cb();
+      this.print(")");
     } else {
-      throw new StringifyError(
-        `Unsupported expression type: ${expression.constructor.name}`
-      );
+      cb();
     }
   }
 
