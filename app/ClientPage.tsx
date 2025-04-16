@@ -9,7 +9,7 @@ export function ClientPage(): ReactElement | null {
   const textarea = useRef<HTMLTextAreaElement>(null);
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen bg-gray-100"
+      className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-800"
     >
       <h1
         className="text-3xl font-bold text-center mt-10"

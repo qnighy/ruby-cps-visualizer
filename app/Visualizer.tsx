@@ -49,7 +49,7 @@ export function Visualizer(props: VisualizerProps): ReactElement | null {
           </ul>
       }
       <div
-        className="w-full flex flex-row items-stretch justify-stretch justify-items-stretch bg-gray-100 mt-6"
+        className="w-full flex flex-row items-stretch justify-stretch justify-items-stretch bg-gray-100 dark:bg-gray-800 mt-6"
       >
         <pre
           className="flex-1 basis-1/2 min-h-64 overflow-auto border border-gray-300 rounded p-4 text-2xl"
