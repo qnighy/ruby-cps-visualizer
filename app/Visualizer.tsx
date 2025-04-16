@@ -59,7 +59,7 @@ export function Visualizer(props: VisualizerProps): ReactElement | null {
           </code>
         </pre>
         <pre
-          className="flex-1 basis-1/2 min-h-64 overflow-auto border border-gray-300 rounded p-4 text-2xl"
+          className="flex-1 basis-1/2 min-h-64 overflow-auto border border-gray-300 rounded p-4 text-xl"
         >
           <code>
             {s}
