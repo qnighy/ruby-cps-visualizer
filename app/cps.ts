@@ -15,6 +15,7 @@ type Hole<T> = (value: T) => void;
 class CPSTransformer {
   intermiediateVariableCounter: number = 1;
   contVariableCounter: number = 1;
+  currentHole: Hole<Node> | null = null;
 
   cpsProgram(program: ProgramNode): ProgramNode {
     const result = new ProgramNode(
@@ -29,11 +30,11 @@ class CPSTransformer {
         [dummyNode()],
       ),
     );
-    const initialHole: Hole<Node> = (value: Node) => {
+    this.currentHole = (value: Node) => {
       result.statements.body[0] = value;
     };
-    const [finalHole, finalVar] = this.cpsStatements(program.statements, initialHole, true);
-    finalHole(
+    const finalVar = this.cpsStatements(program.statements, true);
+    this.fill(
       new CallNode(
         0,
         DUMMY_LOCATION,
@@ -70,9 +71,8 @@ class CPSTransformer {
 
   cpsStatements(
     statements: StatementsNode,
-    givenHole: Hole<Node>,
     needResult: boolean
-  ): [Hole<Node>, string] {
+  ): string {
     const [init, last] =
       needResult
         ? [
@@ -80,28 +80,25 @@ class CPSTransformer {
             statements.body[statements.body.length - 1] ?? new NilNode(0, DUMMY_LOCATION, 0),
           ]
         : [statements.body, new NilNode(0, DUMMY_LOCATION, 0)];
-    let hole = givenHole;
     for (const statement of init) {
-      const [newHole] = this.cpsExpression(statement, hole, false);
-      hole = newHole;
+      this.cpsExpression(statement, false);
     }
     if (needResult) {
-      return this.cpsExpression(last, hole, true);
+      return this.cpsExpression(last, true);
     } else {
-      return [hole, ""];
+      return "";
     }
   }
 
   cpsExpression(
     expression: Node,
-    givenHole: Hole<Node>,
     needResult: boolean,
-  ): [Hole<Node>, string] {
+  ): string {
     if (expression instanceof StatementsNode) {
-      return this.cpsStatements(expression, givenHole, needResult);
+      return this.cpsStatements(expression, needResult);
     } else if (expression instanceof ParenthesesNode) {
       if (expression.body) {
-        return this.cpsExpression(expression.body, givenHole, needResult);
+        return this.cpsExpression(expression.body, needResult);
       }
     } else if (expression instanceof BeginNode) {
       if (
@@ -110,15 +107,13 @@ class CPSTransformer {
         !expression.elseClause &&
         !expression.ensureClause
       ) {
-        return this.cpsStatements(expression.statements, givenHole, needResult);
+        return this.cpsStatements(expression.statements, needResult);
       }
     } else if (expression instanceof CallNode) {
       if (!(expression.block instanceof BlockNode)) {
-        let hole = givenHole;
         let receiver: Node | null = null;
         if (expression.receiver) {
-          const [newHole, varName] = this.cpsExpression(expression.receiver, hole, true);
-          hole = newHole;
+          const varName = this.cpsExpression(expression.receiver, true);
           receiver = new LocalVariableReadNode(
             0,
             DUMMY_LOCATION,
@@ -130,8 +125,7 @@ class CPSTransformer {
         const args: Node[] = [];
         if (expression.arguments_) {
           for (const arg of expression.arguments_.arguments_) {
-            const [newHole, varName] = this.cpsExpression(arg, hole, true);
-            hole = newHole;
+            const varName = this.cpsExpression(arg, true);
             args.push(new LocalVariableReadNode(
               0,
               DUMMY_LOCATION,
@@ -151,7 +145,7 @@ class CPSTransformer {
             blockArgName,
             0
           );
-          hole = (value: Node) => {
+          this.currentHole = (value: Node) => {
             ((expression.block as BlockNode).body as StatementsNode).body[0] = value;
           };
         }
@@ -178,32 +172,39 @@ class CPSTransformer {
           varName,
           dummyNode(),
         );
-        hole(e);
-        hole = (value: Node) => {
+        this.fill(e);
+        this.currentHole = (value: Node) => {
           ((e.block as BlockNode).body as StatementsNode).body[0] = value;
         };
-        return [hole, varName ?? ""];
+        return varName ?? "";
       }
     }
-    return this.cpsExpressionFallback(expression, givenHole, needResult);
+    return this.cpsExpressionFallback(expression, needResult);
   }
 
   cpsExpressionFallback(
     expression: Node,
-    givenHole: Hole<Node>,
     needResult: boolean,
-  ): [Hole<Node>, string] {
+  ): string {
     const varName = needResult ? this.freshIntermediate() : null;
     const e = thenCall(
       expression,
       varName,
       dummyNode(),
     );
-    givenHole(e);
-    const hole: Hole<Node> = (value: Node) => {
+    this.fill(e);
+    this.currentHole = (value: Node) => {
       ((e.block as BlockNode).body as StatementsNode).body[0] = value;
     };
-    return [hole, varName ?? ""];
+    return varName ?? "";
+  }
+
+  fill(value: Node) {
+    if (!this.currentHole) {
+      throw new CPSError("Internal error: no hole to fill");
+    }
+    this.currentHole(value);
+    this.currentHole = null;
   }
 
   freshIntermediate(): string {
