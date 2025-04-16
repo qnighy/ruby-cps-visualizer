@@ -1,9 +1,12 @@
-import type { NextConfig } from "next";
+// @ts-check
 import path from "node:path";
 
 const __dirname = new URL(".", import.meta.url).pathname;
 
-const nextConfig: NextConfig = {
+/**
+ * @type {import('next').NextConfig}
+ */
+const nextConfig = {
   webpack(config, options) {
     const { isServer } = options;
 
