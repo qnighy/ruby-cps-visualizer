@@ -1,4 +1,4 @@
-import { ArgumentsNode, BeginNode, BlockArgumentNode, BlockNode, BlockParametersNode, CallNode, LocalVariableReadNode, Location, NilNode, Node, ParametersNode, ParenthesesNode, ProgramNode, RequiredParameterNode, StatementsNode } from "@ruby/prism";
+import { ArgumentsNode, BeginNode, BlockArgumentNode, BlockNode, BlockParametersNode, CallNode, FalseNode, LocalVariableReadNode, Location, NilNode, Node, ParametersNode, ParenthesesNode, ProgramNode, RequiredParameterNode, SelfNode, SourceEncodingNode, SourceFileNode, SourceLineNode, StatementsNode, TrueNode } from "@ruby/prism";
 
 export class CPSError extends Error {
   static {
@@ -103,6 +103,18 @@ class CPSTransformer {
       ) {
         return this.cpsStatements(expression.statements, needResult);
       }
+    } else if (
+      expression instanceof SelfNode ||
+      expression instanceof SourceLineNode ||
+      expression instanceof SourceFileNode ||
+      expression instanceof SourceEncodingNode ||
+      expression instanceof TrueNode ||
+      expression instanceof FalseNode ||
+      expression instanceof NilNode ||
+      expression instanceof LocalVariableReadNode
+    ) {
+      // No CPS for variable-likes
+      return needResult ? expression : null;
     } else if (expression instanceof CallNode) {
       if (!(expression.block instanceof BlockNode)) {
         let receiver: Node | null = null;

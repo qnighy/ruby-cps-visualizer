@@ -1,4 +1,4 @@
-import { BlockNode, BlockParameterNode, BlockParametersNode, CallNode, IntegerNode, KeywordRestParameterNode, LocalVariableReadNode, LocalVariableWriteNode, NilNode, Node, OptionalKeywordParameterNode, OptionalParameterNode, ProgramNode, RequiredKeywordParameterNode, RequiredParameterNode, RestParameterNode, StatementsNode } from "@ruby/prism";
+import { BlockNode, BlockParameterNode, BlockParametersNode, CallNode, FalseNode, IntegerNode, KeywordRestParameterNode, LocalVariableReadNode, LocalVariableWriteNode, NilNode, Node, OptionalKeywordParameterNode, OptionalParameterNode, ProgramNode, RequiredKeywordParameterNode, RequiredParameterNode, RestParameterNode, SelfNode, SourceEncodingNode, SourceFileNode, SourceLineNode, StatementsNode, TrueNode } from "@ruby/prism";
 
 export class StringifyError extends Error {
   static {
@@ -45,7 +45,19 @@ class Printer {
       this.print(")");
       return;
     }
-    if (expression instanceof NilNode) {
+    if (expression instanceof SelfNode) {
+      this.print("self");
+    } else if (expression instanceof SourceLineNode) {
+      this.print("__LINE__");
+    } else if (expression instanceof SourceFileNode) {
+      this.print("__FILE__");
+    } else if (expression instanceof SourceEncodingNode) {
+      this.print("__ENCODING__");
+    } else if (expression instanceof TrueNode) {
+      this.print("true");
+    } else if (expression instanceof FalseNode) {
+      this.print("false");
+    } else if (expression instanceof NilNode) {
       this.print("nil");
     } else if (expression instanceof IntegerNode) {
       this.print(expression.value.toString());
@@ -154,7 +166,16 @@ class Printer {
   }
 
   levelOfExpression(expression: Node): number {
-    if (expression instanceof NilNode) {
+    if (
+      expression instanceof SelfNode ||
+      expression instanceof SourceLineNode ||
+      expression instanceof SourceFileNode ||
+      expression instanceof SourceEncodingNode ||
+      expression instanceof TrueNode ||
+      expression instanceof FalseNode ||
+      expression instanceof NilNode ||
+      expression instanceof LocalVariableReadNode
+    ) {
       return LEVEL_PRIMARY;
     } else if (expression instanceof IntegerNode) {
       return LEVEL_PRIMARY;
