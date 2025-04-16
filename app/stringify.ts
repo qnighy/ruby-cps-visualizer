@@ -1,4 +1,4 @@
-import { CallNode, IntegerNode, LocalVariableReadNode, LocalVariableWriteNode, Node, ProgramNode, StatementsNode } from "@ruby/prism";
+import { BlockNode, BlockParameterNode, BlockParametersNode, CallNode, IntegerNode, KeywordRestParameterNode, LocalVariableReadNode, LocalVariableWriteNode, Node, OptionalKeywordParameterNode, OptionalParameterNode, ProgramNode, RequiredKeywordParameterNode, RequiredParameterNode, RestParameterNode, StatementsNode } from "@ruby/prism";
 
 export class StringifyError extends Error {
   static {
@@ -46,7 +46,7 @@ class Printer {
       return;
     }
     if (expression instanceof IntegerNode) {
-      this.buf += expression.value.toString();
+      this.print(expression.value.toString());
     } else if (expression instanceof LocalVariableReadNode) {
       this.print(expression.name);
     } else if (expression instanceof CallNode) {
@@ -70,6 +70,75 @@ class Printer {
           this.printArgument(arg);
         }
         this.print(")");
+      }
+      if (expression.block instanceof BlockNode) {
+        this.print(" do");
+        if (expression.block.parameters instanceof BlockParametersNode) {
+          this.print(" |");
+          const params: Node[] = [
+            ...expression.block.parameters.parameters?.requireds ?? [],
+            ...expression.block.parameters.parameters?.optionals ?? [],
+            ...expression.block.parameters.parameters?.rest ?
+              [expression.block.parameters.parameters.rest] :
+              [],
+            ...expression.block.parameters.parameters?.posts ?? [],
+            ...expression.block.parameters.parameters?.keywords ?? [],
+            ...expression.block.parameters.parameters?.keywordRest ?
+              [expression.block.parameters.parameters.keywordRest] :
+              [],
+            ...expression.block.parameters.parameters?.block ?
+              [expression.block.parameters.parameters.block] :
+              [],
+          ];
+          let first = true;
+          for (const param of params) {
+            if (!first) {
+              this.print(", ");
+            }
+            first = false;
+            if (param instanceof RequiredParameterNode) {
+              this.print(param.name);
+            } else if (param instanceof OptionalParameterNode) {
+              this.print(param.name);
+              this.print(" = ");
+              this.printExpression(param.value, LEVEL_ASGN);
+            } else if (param instanceof RestParameterNode) {
+              this.print("*");
+              if (param.name != null) {
+                this.print(param.name);
+              }
+            } else if (param instanceof RequiredKeywordParameterNode) {
+              this.print(param.name);
+              this.print(":");
+            } else if (param instanceof OptionalKeywordParameterNode) {
+              this.print(param.name);
+              this.print(": ");
+              this.printExpression(param.value, LEVEL_ASGN);
+            } else if (param instanceof KeywordRestParameterNode) {
+              this.print("**");
+              if (param.name != null) {
+                this.print(param.name);
+              }
+            } else if (param instanceof BlockParameterNode) {
+              this.print("&");
+              if (param.name != null) {
+                this.print(param.name);
+              }
+            } else {
+              throw new StringifyError(
+                `Unsupported parameter type: ${param.constructor.name}`
+              );
+            }
+          }
+          this.print("|");
+        }
+        this.print("\n");
+        this.indent++;
+        if (expression.block.body instanceof StatementsNode) {
+          this.printStatements(expression.block.body);
+        }
+        this.indent--;
+        this.print("end");
       }
     } else if (expression instanceof LocalVariableWriteNode) {
       this.print(expression.name);
