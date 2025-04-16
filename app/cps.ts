@@ -1,4 +1,4 @@
-import { ArgumentsNode, BlockNode, CallNode, LocalVariableReadNode, Location, NilNode, Node, ProgramNode, StatementsNode } from "@ruby/prism";
+import { ArgumentsNode, BeginNode, BlockNode, CallNode, LocalVariableReadNode, Location, NilNode, Node, ParenthesesNode, ProgramNode, StatementsNode } from "@ruby/prism";
 
 export class CPSError extends Error {
   static {
@@ -61,6 +61,22 @@ function cpsStatements(statements: StatementsNode, cont: Cont): Cont {
 }
 
 function cpsExpression(expression: Node, cont: Cont): Cont {
+  if (expression instanceof StatementsNode) {
+    return cpsStatements(expression, cont);
+  } else if (expression instanceof ParenthesesNode) {
+    if (expression.body) {
+      return cpsExpression(expression.body, cont);
+    }
+  } else if (expression instanceof BeginNode) {
+    if (
+      expression.statements &&
+      !expression.rescueClause &&
+      !expression.elseClause &&
+      !expression.ensureClause
+    ) {
+      return cpsStatements(expression.statements, cont);
+    }
+  }
   return (result: Node | null) =>
     result
       ? new CallNode(
@@ -80,7 +96,12 @@ function cpsExpression(expression: Node, cont: Cont): Cont {
             0,
             [],
             null,
-            cont(expression),
+            new StatementsNode(
+              0,
+              DUMMY_LOCATION,
+              0,
+              [cont(expression)],
+            ),
             DUMMY_LOCATION,
             DUMMY_LOCATION
           ),
