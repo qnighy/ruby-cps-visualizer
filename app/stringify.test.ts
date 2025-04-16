@@ -1,11 +1,32 @@
-import { loadPrism } from "@ruby/prism";
+import { loadPrism, type Options } from "@ruby/prism";
 import { describe, expect, it } from "vitest";
 import { stringifyProgram } from "./stringify";
 
 const parse = await loadPrism();
 
-function restringify(source: string): string {
-  const result = parse(source);
+function restringify(source: string, options: Options = {}): string {
+  const {
+    filepath,
+    line,
+    encoding,
+    frozen_string_literal,
+    command_line,
+    version,
+    main_script,
+    partial_script,
+    scopes,
+  } = options;
+  const result = parse(source, {
+    filepath,
+    line,
+    encoding,
+    frozen_string_literal,
+    command_line,
+    version,
+    main_script,
+    partial_script,
+    scopes,
+  });
   for (const error of result.errors) {
     throw new SyntaxError(error.message);
   }
@@ -39,6 +60,9 @@ describe("stringifyProgram", () => {
       expect(restringify("42")).toBe("42\n");
       expect(restringify("-42")).toBe("-42\n");
       expect(restringify("0")).toBe("0\n");
+    });
+    it("stringifies local variables", () => {
+      expect(restringify("a", { scopes: [["a"]] })).toBe("a\n");
     });
   });
 });
