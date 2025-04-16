@@ -1,4 +1,4 @@
-import { CallNode, IntegerNode, Node, ProgramNode, StatementsNode } from "@ruby/prism";
+import { CallNode, IntegerNode, LocalVariableReadNode, LocalVariableWriteNode, Node, ProgramNode, StatementsNode } from "@ruby/prism";
 
 export class StringifyError extends Error {
   static {
@@ -15,7 +15,8 @@ export function stringifyProgram(program: ProgramNode): string {
 const INDENT_UNIT = "  ";
 const LEVEL_PRIMARY = 1;
 const LEVEL_CALL = 2;
-const LEVEL_STMT = 3;
+const LEVEL_ASGN = 3;
+const LEVEL_STMT = 4;
 
 class Printer {
   indent: number = 0;
@@ -46,6 +47,8 @@ class Printer {
     }
     if (expression instanceof IntegerNode) {
       this.buf += expression.value.toString();
+    } else if (expression instanceof LocalVariableReadNode) {
+      this.print(expression.name);
     } else if (expression instanceof CallNode) {
       if (expression.receiver) {
         this.printExpression(expression.receiver, LEVEL_CALL);
@@ -68,6 +71,10 @@ class Printer {
         }
         this.print(")");
       }
+    } else if (expression instanceof LocalVariableWriteNode) {
+      this.print(expression.name);
+      this.print(" = ");
+      this.printExpression(expression.value, LEVEL_ASGN);
     } else {
       throw new StringifyError(
         `Unsupported expression type: ${expression.constructor.name}`
@@ -78,8 +85,12 @@ class Printer {
   levelOfExpression(expression: Node): number {
     if (expression instanceof IntegerNode) {
       return LEVEL_PRIMARY;
+    } else if (expression instanceof LocalVariableReadNode) {
+      return LEVEL_PRIMARY;
     } else if (expression instanceof CallNode) {
       return LEVEL_CALL;
+    } else if (expression instanceof LocalVariableWriteNode) {
+      return LEVEL_ASGN;
     } else {
       throw new StringifyError(
         `Unsupported expression type: ${expression.constructor.name}`
