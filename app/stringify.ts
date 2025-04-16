@@ -1,4 +1,4 @@
-import { BlockNode, BlockParameterNode, BlockParametersNode, CallNode, IntegerNode, KeywordRestParameterNode, LocalVariableReadNode, LocalVariableWriteNode, Node, OptionalKeywordParameterNode, OptionalParameterNode, ProgramNode, RequiredKeywordParameterNode, RequiredParameterNode, RestParameterNode, StatementsNode } from "@ruby/prism";
+import { BlockNode, BlockParameterNode, BlockParametersNode, CallNode, IntegerNode, KeywordRestParameterNode, LocalVariableReadNode, LocalVariableWriteNode, NilNode, Node, OptionalKeywordParameterNode, OptionalParameterNode, ProgramNode, RequiredKeywordParameterNode, RequiredParameterNode, RestParameterNode, StatementsNode } from "@ruby/prism";
 
 export class StringifyError extends Error {
   static {
@@ -45,7 +45,9 @@ class Printer {
       this.print(")");
       return;
     }
-    if (expression instanceof IntegerNode) {
+    if (expression instanceof NilNode) {
+      this.print("nil");
+    } else if (expression instanceof IntegerNode) {
       this.print(expression.value.toString());
     } else if (expression instanceof LocalVariableReadNode) {
       this.print(expression.name);
@@ -152,7 +154,9 @@ class Printer {
   }
 
   levelOfExpression(expression: Node): number {
-    if (expression instanceof IntegerNode) {
+    if (expression instanceof NilNode) {
+      return LEVEL_PRIMARY;
+    } else if (expression instanceof IntegerNode) {
       return LEVEL_PRIMARY;
     } else if (expression instanceof LocalVariableReadNode) {
       return LEVEL_PRIMARY;
