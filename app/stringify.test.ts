@@ -65,4 +65,19 @@ describe("stringifyProgram", () => {
       expect(restringify("a", { scopes: [["a"]] })).toBe("a\n");
     });
   });
+
+  describe("binary expressions", () => {
+    it("stringifies left-association", () => {
+      expect(restringify("(1 + 2) + 3")).toBe("1 + 2 + 3\n");
+      expect(restringify("1 + (2 + 3)")).toBe("1 + (2 + 3)\n");
+    });
+    it("stringifies right-association", () => {
+      expect(restringify("(1 ** 2) ** 3")).toBe("(1 ** 2) ** 3\n");
+      expect(restringify("1 ** (2 ** 3)")).toBe("1 ** 2 ** 3\n");
+    });
+    it("stringifies non-association", () => {
+      expect(restringify("(1 == 2) == 3")).toBe("(1 == 2) == 3\n");
+      expect(restringify("1 == (2 == 3)")).toBe("1 == (2 == 3)\n");
+    });
+  });
 });
